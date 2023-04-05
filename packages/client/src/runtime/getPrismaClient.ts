@@ -38,7 +38,7 @@ import { RawValue, Sql } from 'sql-template-tag'
 import { getPrismaClientDMMF } from '../generation/getDMMF'
 import type { InlineDatasources } from '../generation/utils/buildInlineDatasources'
 import { PrismaClientValidationError } from '.'
-import { $extends } from './core/extensions/$extends'
+import { $extends, Args as ExtensionArgs } from './core/extensions/$extends'
 import { applyQueryExtensions } from './core/extensions/applyQueryExtensions'
 import { MergedExtensionsList } from './core/extensions/MergedExtensionsList'
 import { checkPlatformCaching } from './core/init/checkPlatformCaching'
@@ -294,7 +294,9 @@ const BatchTxIdCounter = {
 }
 
 export type Client = ReturnType<typeof getPrismaClient> extends new () => infer T ? T : never
-
+type ExtendedClass<Class, Methods, ArgsType extends unknown[] = []> = {
+  new (...args: ArgsType): Class & Methods
+}
 export function getPrismaClient(config: GetPrismaClientConfig) {
   class PrismaClient {
     _baseDmmf: BaseDMMFHelper
@@ -315,6 +317,7 @@ export function getPrismaClient(config: GetPrismaClientConfig) {
     _rejectOnNotFound?: InstanceRejectOnNotFound
     _dataProxy: boolean
     _extensions: MergedExtensionsList
+    _staticExtensions: Record<string, any> = {}
 
     constructor(optionsArg?: PrismaClientOptions) {
       checkPlatformCaching(config)
@@ -473,6 +476,22 @@ export function getPrismaClient(config: GetPrismaClientConfig) {
 
       return applyModelsAndClientExtensions(this) // custom constructor return value
     }
+
+    static $extend<Methods>(newMethods: Methods) {
+      class Class extends this {
+        constructor() {
+          super()
+          // Then we assign those methods to the class's `this`
+          // This is all we need in JS, but TS won't support these types yet
+          Object.assign(this, newMethods)
+          Object.assign(this._staticExtensions, newMethods)
+        }
+      }
+      // We convert the class's type based off the original class, extending with the new methods
+      // Finally, we add support for the static non-instance methods with `& typeof Class`
+      return Class as ExtendedClass<Class, Methods> & typeof Class
+    }
+
     get [Symbol.toStringTag]() {
       return 'PrismaClient'
     }

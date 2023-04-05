@@ -294,7 +294,9 @@ const BatchTxIdCounter = {
 }
 
 export type Client = ReturnType<typeof getPrismaClient> extends new () => infer T ? T : never
-
+type ExtendedClass<Class, Methods, ArgsType extends unknown[] = []> = {
+  new (...args: ArgsType): Class & Methods
+}
 export function getPrismaClient(config: GetPrismaClientConfig) {
   class PrismaClient {
     _baseDmmf: BaseDMMFHelper
@@ -473,6 +475,21 @@ export function getPrismaClient(config: GetPrismaClientConfig) {
 
       return applyModelsAndClientExtensions(this) // custom constructor return value
     }
+
+    static $extend<Methods>(newMethods: Methods) {
+      class Class extends this {
+        constructor() {
+          super()
+          // Then we assign those methods to the class's `this`
+          // This is all we need in JS, but TS won't support these types yet
+          Object.assign(this, newMethods)
+        }
+      }
+      // We convert the class's type based off the original class, extending with the new methods
+      // Finally, we add support for the static non-instance methods with `& typeof Class`
+      return Class as ExtendedClass<Class, Methods> & typeof Class
+    }
+
     get [Symbol.toStringTag]() {
       return 'PrismaClient'
     }

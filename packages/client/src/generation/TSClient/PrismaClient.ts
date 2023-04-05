@@ -528,7 +528,9 @@ export class PrismaClient<
    * Add a middleware
    */
   $use(cb: Prisma.Middleware): void
-
+  
+  static $extend<Methods>(methods: Methods): ExtendedClass<PrismaClient, Methods, []> & typeof PrismaClient
+  
 ${[
   executeRawDefinition.bind(this)(),
   queryRawDefinition.bind(this)(),

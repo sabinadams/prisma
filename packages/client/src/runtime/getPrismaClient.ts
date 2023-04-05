@@ -317,7 +317,6 @@ export function getPrismaClient(config: GetPrismaClientConfig) {
     _rejectOnNotFound?: InstanceRejectOnNotFound
     _dataProxy: boolean
     _extensions: MergedExtensionsList
-    _staticExtensions: Record<string, any> = {}
 
     constructor(optionsArg?: PrismaClientOptions) {
       checkPlatformCaching(config)
@@ -484,7 +483,6 @@ export function getPrismaClient(config: GetPrismaClientConfig) {
           // Then we assign those methods to the class's `this`
           // This is all we need in JS, but TS won't support these types yet
           Object.assign(this, newMethods)
-          Object.assign(this._staticExtensions, newMethods)
         }
       }
       // We convert the class's type based off the original class, extending with the new methods
